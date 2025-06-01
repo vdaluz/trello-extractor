@@ -1,6 +1,6 @@
 # Trello Board Extractor
 
-A tool to extract and preserve Trello boards before account deletion, creating organized folder structures with markdown files and downloaded attachments.
+A tool to extract and preserve Trello boards, creating organized folder structures with markdown files and comprehensive metadata preservation.
 
 ## Features
 
@@ -9,22 +9,34 @@ A tool to extract and preserve Trello boards before account deletion, creating o
 - ✅ **Organized Structure**: Clean folder hierarchy with markdown files
 - ✅ **Modular Architecture**: SOLID principles with separate class files
 - ✅ **Multiple Auth Methods**: Config file, environment variables, or CLI args
-- ✅ **Error Handling**: Graceful fallback when attachments fail
+- ✅ **Error Handling**: Graceful fallback with detailed attachment information
 - ✅ **Rich Metadata**: Board info, labels, members, and timestamps
+
+## Attachment Downloads
+
+**✅ Working**: Attachment downloads work reliably when you provide valid Trello API credentials. The tool will:
+
+1. **Attempt multiple download methods** for each attachment
+2. **Use the most reliable API endpoint** with OAuth authentication
+3. **Download files with original names and metadata**
+4. **Create fallback info files** only if downloads fail
+5. **Continue processing** all other board content normally
+
+**Setup Required**: You'll need to set up Trello API credentials (see Authentication Setup below) for attachment downloads to work.
 
 ## Quick Start
 
-### 1. Extract Without Attachments
+### 1. Extract Without Authentication (no attachments)
 ```bash
 ruby src/trello_extractor.rb exports/your-board.json
 ```
 
-### 2. Setup Authentication (for attachments)
+### 2. Setup Authentication (recommended - enables attachment downloads)
 ```bash
 ruby src/trello_extractor.rb setup
 ```
 
-### 3. Extract With Attachments
+### 3. Extract With Authentication (includes attachments)
 ```bash
 ruby src/trello_extractor.rb exports/your-board.json
 ```
@@ -41,7 +53,7 @@ ruby src/trello_extractor.rb setup  # Optional: for attachment downloads
 
 ## Authentication Setup
 
-To download attachments, you need Trello API credentials:
+To attempt attachment downloads, you need Trello API credentials:
 
 ### Option 1: Interactive Setup (Recommended)
 ```bash
@@ -85,6 +97,15 @@ ruby src/trello_extractor.rb exports/board-export.json extracted/my-board
 ruby src/trello_extractor.rb exports/board-export.json extracted/my-board API_KEY TOKEN
 ```
 
+## Exporting from Trello
+
+To get the JSON file that this tool processes:
+
+1. Open your Trello board
+2. Go to **Board Menu** → **More** → **Print and Export** → **Export as JSON**
+3. Save the downloaded JSON file to the `exports/` directory
+4. Run the extractor on that file
+
 ## Project Structure
 
 ```
@@ -114,7 +135,7 @@ extracted/{board-name}/
 ├── lists/                     # Cards organized by list
 │   ├── {list-name}/
 │   │   ├── {card-name}.md     # Individual card files
-│   │   └── attachments/       # Downloaded files
+│   │   └── attachments/       # Downloaded files (when successful)
 ├── attachments/               # Global attachments directory
 └── metadata/                  # Board configuration
     ├── board-info.json        # Board details
@@ -129,7 +150,7 @@ Each card is converted to markdown with:
 - **Metadata**: List, creation date, due date, labels
 - **Description**: Full card description
 - **Checklists**: With completion status
-- **Attachments**: Links to downloaded files
+- **Attachments**: Links to downloaded files or URLs when download fails
 - **Comments**: Chronological comment history
 
 ## Architecture
@@ -158,9 +179,16 @@ The tool follows SOLID principles with separate classes for each responsibility:
 
 ## Troubleshooting
 
-### Attachments Fail with HTTP 401
-- Run `ruby src/trello_extractor.rb setup` to configure authentication
-- Verify your API key and token are correct
+### Attachments Not Downloading
+If attachments fail to download:
+- Ensure you've set up authentication with `ruby src/trello_extractor.rb setup`
+- Verify your API key and token are correct at https://trello.com/app-key
+- Check that your token has read permissions
+- The tool will create `attachment_info.md` files with URLs for manual download if needed
+
+### Authentication Setup Issues
+- Run `ruby src/trello_extractor.rb setup` to configure credentials interactively
+- Verify your API key and token are correct at https://trello.com/app-key
 - Check that your token has read permissions
 
 ### Large Boards Take Time
@@ -171,6 +199,21 @@ The tool follows SOLID principles with separate classes for each responsibility:
 ### File Permission Errors
 - Ensure you have write permissions to the output directory
 - Check that the exports directory contains your JSON files
+
+### Manual Attachment Download
+If automatic download fails for specific attachments:
+1. Check the `attachment_info.md` files in each list's attachments folder
+2. Copy the URLs from these files
+3. Manually download attachments while logged into Trello
+4. Save them to the appropriate attachments folders
+
+## Use Cases
+
+- **Board Archival**: Preserve project history and documentation
+- **Data Migration**: Move content between project management tools
+- **Backup Creation**: Create local copies of important boards
+- **Documentation**: Convert Trello boards to readable markdown format
+- **Analysis**: Extract data for reporting or analysis
 
 ## Contributing
 

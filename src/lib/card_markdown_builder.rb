@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 require 'date'
+require 'uri'
 
 class CardMarkdownBuilder
-  def initialize(card, list, board_data)
+  def initialize(card, list, board_data, downloaded_attachments = {})
     @card = card
     @list = list
     @board_data = board_data
+    @downloaded_attachments = downloaded_attachments
   end
 
   def build
@@ -65,7 +67,21 @@ class CardMarkdownBuilder
     
     content = "## Attachments\n\n"
     @card['attachments'].each do |attachment|
-      content += "- [#{attachment['name']}](#{attachment['url']})\n" if attachment['url']
+      if @downloaded_attachments[attachment['id']]
+        # Use relative path to the downloaded file with exact filename
+        filename = File.basename(@downloaded_attachments[attachment['id']])
+        relative_path = "attachments/#{filename}"
+        
+        # Use image syntax for image files, link syntax for others
+        if image_file?(attachment['name'])
+          content += "![#{attachment['name']}](#{relative_path})\n\n"
+        else
+          content += "- [#{attachment['name']}](#{relative_path})\n"
+        end
+      elsif attachment['url']
+        # Use original URL for failed downloads
+        content += "- [#{attachment['name']}](#{attachment['url']}) *(remote - download failed)*\n"
+      end
     end
     content + "\n"
   end
@@ -105,5 +121,12 @@ class CardMarkdownBuilder
     Date.parse(date_string).strftime('%Y-%m-%d')
   rescue
     date_string
+  end
+
+  def image_file?(filename)
+    return false unless filename
+    
+    ext = File.extname(filename.downcase)
+    ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.svg', '.webp'].include?(ext)
   end
 end 

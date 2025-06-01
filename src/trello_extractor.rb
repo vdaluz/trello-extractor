@@ -94,26 +94,38 @@ class TrelloExtractor
   end
 
   def extract_card(card, list, list_name)
-    card_path = File.join(lists_dir, list_name, "#{sanitize_filename(card['name'])}.md")
-    File.write(card_path, build_card_markdown(card, list))
+    # Download attachments first to know which ones succeeded
+    downloaded_attachments = download_attachments(card, list_name) if has_attachments?(card)
     
-    download_attachments(card, list_name) if has_attachments?(card)
+    # Build markdown with knowledge of downloaded files
+    card_path = File.join(lists_dir, list_name, "#{sanitize_filename(card['name'])}.md")
+    File.write(card_path, build_card_markdown(card, list, downloaded_attachments || {}))
   end
 
-  def build_card_markdown(card, list)
-    content = CardMarkdownBuilder.new(card, list, @board_data).build
+  def build_card_markdown(card, list, downloaded_attachments = {})
+    content = CardMarkdownBuilder.new(card, list, @board_data, downloaded_attachments).build
     content += extraction_footer
     content
   end
 
   def download_attachments(card, list_name)
+    downloaded_attachments = {}
+    
     card['attachments'].each do |attachment|
       next unless attachment['url'] && attachment['isUpload']
       
-      AttachmentDownloader.new(
+      downloader = AttachmentDownloader.new(
         attachment, card, list_name, @output_dir, @downloaded_files, @api_key, @token
-      ).download
+      )
+      
+      success = downloader.download
+      if success
+        # Store the local path for this attachment
+        downloaded_attachments[attachment['id']] = downloader.attachment_path
+      end
     end
+    
+    downloaded_attachments
   end
 
   def save_metadata
@@ -190,10 +202,10 @@ def setup_credentials
   puts
   
   print "Enter your API key: "
-  api_key = gets.chomp.strip
+  api_key = STDIN.gets.chomp.strip
   
   print "Enter your token: "
-  token = gets.chomp.strip
+  token = STDIN.gets.chomp.strip
   
   if api_key.empty? || token.empty?
     puts "❌ Both API key and token are required"
