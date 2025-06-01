@@ -9,8 +9,8 @@ trello-extractor/
 ├── exports/                    # Source JSON files from Trello export (gitignored)
 ├── extracted/                  # Converted boards output (gitignored)
 ├── src/                       # Tool source code
-│   └── trello_extractor.py
-├── requirements.txt           # Python dependencies
+│   └── trello_extractor.rb
+├── Gemfile                    # Ruby dependencies
 ├── .gitignore                 # Git ignore rules
 └── README.md                 # This file
 ```
@@ -46,7 +46,7 @@ extracted/{board-name}/
 ## Usage
 
 ```bash
-python src/trello_extractor.py exports/board-export.json
+ruby src/trello_extractor.rb exports/board-export.json
 ```
 
 ## Features

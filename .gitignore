@@ -1,38 +1,32 @@
 # Trello data folders - contain sensitive/large files
-exports/
-extracted/
+# Keep the directories but ignore their contents
+exports/*
+!exports/.gitkeep
+extracted/*
+!extracted/.gitkeep
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Ruby
+*.gem
+*.rbc
+/.config
+/coverage/
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/tmp/
+.bundle/
+vendor/bundle
+lib/bundler/man/
 
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# RVM
+/.rvmrc
+
+# rbenv
+.ruby-version
+.ruby-gemset
 
 # IDE
 .vscode/
