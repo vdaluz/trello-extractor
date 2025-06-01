@@ -9,7 +9,12 @@ trello-extractor/
 ├── exports/                    # Source JSON files from Trello export (gitignored)
 ├── extracted/                  # Converted boards output (gitignored)
 ├── src/                       # Tool source code
-│   └── trello_extractor.rb
+│   ├── trello_extractor.rb    # Main extractor class
+│   └── lib/                   # Supporting classes
+│       ├── card_markdown_builder.rb
+│       ├── attachment_downloader.rb
+│       ├── readme_builder.rb
+│       └── metadata_builder.rb
 ├── Gemfile                    # Ruby dependencies
 ├── .gitignore                 # Git ignore rules
 └── README.md                 # This file
@@ -49,11 +54,21 @@ extracted/{board-name}/
 ruby src/trello_extractor.rb exports/board-export.json
 ```
 
+## Architecture
+
+The tool follows SOLID principles with separate classes for each responsibility:
+
+- **`TrelloExtractor`**: Main orchestration and file operations
+- **`CardMarkdownBuilder`**: Converts cards to markdown format
+- **`AttachmentDownloader`**: Handles file downloads
+- **`ReadmeBuilder`**: Generates board overview
+- **`MetadataBuilder`**: Extracts board metadata
+
 ## Features
 
 - ✅ Organized folder structure
 - ✅ Markdown conversion for cards
 - ✅ Attachment downloading
 - ✅ Metadata preservation
-- ✅ Progress tracking
+- ✅ Modular architecture
 - ✅ Error handling 
