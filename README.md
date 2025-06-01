@@ -222,6 +222,3 @@ If automatic download fails for specific attachments:
 3. Add error handling for edge cases
 4. Update documentation for new features
 
-## License
-
-[Add your license here] 
