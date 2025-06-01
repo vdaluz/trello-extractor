@@ -8,17 +8,23 @@ require_relative 'lib/card_markdown_builder'
 require_relative 'lib/attachment_downloader'
 require_relative 'lib/readme_builder'
 require_relative 'lib/metadata_builder'
+require_relative 'lib/trello_config'
 
 class TrelloExtractor
   attr_reader :json_file, :output_dir, :board_data
 
-  def initialize(json_file, output_dir = nil)
+  def initialize(json_file, output_dir = nil, api_key = nil, token = nil)
     @json_file = json_file
     @output_dir = output_dir || default_output_dir
     @board_data = nil
     @lists_by_id = {}
     @cards_by_list = {}
     @downloaded_files = Set.new
+    
+    # Load credentials: CLI args > env vars > config file
+    credentials = TrelloConfig.load
+    @api_key = api_key || credentials[:api_key]
+    @token = token || credentials[:token]
   end
 
   def extract!
@@ -27,10 +33,15 @@ class TrelloExtractor
     extract_content
     save_metadata
     
-    puts "✅ Extraction complete! #{card_count} cards in #{@output_dir}"
+    auth_status = authenticated? ? " (authenticated)" : " (no auth - attachments may fail)"
+    puts "✅ Extraction complete! #{card_count} cards in #{@output_dir}#{auth_status}"
   end
 
   private
+
+  def authenticated?
+    @api_key && @token
+  end
 
   def load_board_data
     raise "JSON file not found: #{@json_file}" unless File.exist?(@json_file)
@@ -99,7 +110,9 @@ class TrelloExtractor
     card['attachments'].each do |attachment|
       next unless attachment['url'] && attachment['isUpload']
       
-      AttachmentDownloader.new(attachment, card, list_name, @output_dir, @downloaded_files).download
+      AttachmentDownloader.new(
+        attachment, card, list_name, @output_dir, @downloaded_files, @api_key, @token
+      ).download
     end
   end
 
@@ -166,14 +179,72 @@ class TrelloExtractor
   end
 end
 
+def setup_credentials
+  puts "🔧 Trello API Setup"
+  puts "==================="
+  puts
+  puts "To download attachments, you need Trello API credentials:"
+  puts "1. Visit: https://trello.com/app-key"
+  puts "2. Copy your API key"
+  puts "3. Click 'Token' to generate a read-only token"
+  puts
+  
+  print "Enter your API key: "
+  api_key = gets.chomp.strip
+  
+  print "Enter your token: "
+  token = gets.chomp.strip
+  
+  if api_key.empty? || token.empty?
+    puts "❌ Both API key and token are required"
+    exit 1
+  end
+  
+  TrelloConfig.create_config_file(api_key, token)
+  puts
+  puts "🎉 Setup complete! You can now extract boards with attachment downloads."
+end
+
 if __FILE__ == $0
   if ARGV.empty?
-    puts "Usage: ruby #{$0} <json_file> [output_dir]"
+    puts <<~USAGE
+      Trello Board Extractor
+      ======================
+      
+      Usage: 
+        ruby #{$0} <json_file> [output_dir] [api_key] [token]
+        ruby #{$0} setup
+      
+      Commands:
+        setup       - Configure Trello API credentials for attachment downloads
+      
+      Arguments:
+        json_file   - Path to Trello JSON export file
+        output_dir  - Optional: Output directory (default: extracted/<board-name>)
+        api_key     - Optional: Trello API key (overrides config)
+        token       - Optional: Trello token (overrides config)
+      
+      Examples:
+        ruby #{$0} setup
+        ruby #{$0} exports/board.json
+        ruby #{$0} exports/board.json extracted/my-board
+        ruby #{$0} exports/board.json extracted/my-board YOUR_API_KEY YOUR_TOKEN
+      
+      Credential Priority:
+        1. Command line arguments
+        2. Environment variables (TRELLO_API_KEY, TRELLO_TOKEN)
+        3. Configuration file (.trello_config.json)
+    USAGE
     exit 1
   end
 
+  if ARGV[0] == 'setup'
+    setup_credentials
+    exit 0
+  end
+
   begin
-    extractor = TrelloExtractor.new(ARGV[0], ARGV[1])
+    extractor = TrelloExtractor.new(ARGV[0], ARGV[1], ARGV[2], ARGV[3])
     extractor.extract!
   rescue => e
     puts "Error: #{e.message}"

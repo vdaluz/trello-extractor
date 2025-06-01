@@ -5,6 +5,9 @@ exports/*
 extracted/*
 !extracted/.gitkeep
 
+# Trello API credentials - keep secure!
+.trello_config.json
+
 # Ruby
 *.gem
 *.rbc
